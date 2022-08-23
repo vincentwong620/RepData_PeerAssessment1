@@ -1,25 +1,73 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
+author: "Vincent Wong"
+date: '2022-08-23'
+output: html_document
     keep_md: true
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
+```
+
 
 ## Loading and preprocessing the data
+```{r}
+# download file from web
+download.file("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip", destfile = "activity.zip",mode="wb")
+# unzip data and read 
+unzip("activity.zip")
+mydf <- read.csv("activity.csv", header = TRUE)
+head(mydf)
+```
 
 
 
 ## What is mean total number of steps taken per day?
-
+```{r echo=FALSE}
+# Calculate the total steps taken per day:
+total_by_day <- mydf %>% select(date, steps) %>% group_by(date) %>% summarize(total_steps= sum(steps)) %>%na.omit()
+# A histogram of total steps taken per day:
+hist(total_by_day$total_steps, xlab = "Total daily Steps",main="Histogram of Total Steps by day", breaks = 20)
+```
 
 
 ## What is the average daily activity pattern?
+```{r}
+meanStepsInterval <- aggregate(steps ~ interval, data, mean)
+head(meanStepsInterval)
+```
 
+The base R plotting system is used to create a time series plot, with each interval on the x axis, and the average steps data on the y axis.
 
+```{r}
+plot(x=meanStepsInterval$interval, y=meanStepsInterval$steps, type="l",
+     main="Time Series Plot of Average Steps Taken per Interval",
+     ylab="Number of Steps", xlab="Intervals (in 5 mins)",
+     col="darkblue", lwd=1.5, family="serif")
+```
 
+```{r}
+meanStepsInterval[grep(max(meanStepsInterval$steps), meanStepsInterval$steps), ]
+```
 ## Imputing missing values
 
+```{r}
+#Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with \color{red}{\verb|NA|}NAs)
+missing_Values <- sum(is.na(mydf))
+missing_Values
+```
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+step_mean$date <- as.Date(step_mean$date)
+step_mean$weekday <- weekdays(step_mean$date)
+step_mean$weekend <- ifelse(step_mean$weekday == "Saturday" | step_mean$weekday == "dimanche", "Weekend", "Weekday")
+difference_week_data <- aggregate(step_mean$steps, by = list(step_mean$weekend, step_mean$interval), na.omit(mean))
+names(difference_week_data) <- c("weekend", "interval", "steps")
+ggplot(difference_week_data, aes(x= interval, y = steps, color = weekend)) + geom_line() + facet_grid(weekend ~.) + xlab("Interval") + ylab("Mean of steps") + ggtitle("Differences in activity patterns between weekdays and weekends")
+```
